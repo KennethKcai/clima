@@ -4,6 +4,8 @@ import plotly.graph_objects as go
 import requests
 from dash.exceptions import PreventUpdate
 from dash_extensions.enrich import dcc, html, Output, Input, State
+import dash_table
+import pandas as pd
 
 from app import app
 from my_project.extract_df import get_data
@@ -55,6 +57,13 @@ def layout_summary(si_ip):
                             tooltip_text="Use the following buttons to download either the Clima sourcefile or the EPW file",
                         ),
                     ),
+                    dbc.Button("Show Top 10 Rows", id="show-top-btn", n_clicks=0, className="mb-3"),
+                    dash_table.DataTable(
+                        id='top-10-table',
+                        columns=[],  # 将在回调中设置
+                        data=[]  # 将在回调中设置
+                    ),
+                    
                     dcc.Loading(
                         type="circle",
                         children=dbc.Row(
@@ -519,3 +528,24 @@ def download_clima_dataframe(n_clicks, meta):
         )
     else:
         raise PreventUpdate
+
+@app.callback(
+    [Output('top-10-table', 'columns'),
+     Output('top-10-table', 'data')],
+    [Input('show-top-btn', 'n_clicks')],  # 假设您有一个按钮ID为'show-top-btn'
+    [State('df-store', 'data')],  # 假设您的DataFrame以JSON格式存储在客户端的Store组件中
+    prevent_initial_call=True  # 防止在页面加载时自动调用
+)
+def show_top_10_data(n_clicks, df):
+    if n_clicks is None or df is None:
+        # 如果没有点击或DataFrame数据不可用，不执行任何操作
+        raise PreventUpdate
+
+    print(type(df))  # 应该显示 <class 'str'>
+    print(df)  # 检查内容是否看起来像有效的 JSON
+    
+    # 准备数据和列来更新DataTable
+    columns = [{"name": i, "id": i} for i in df.columns]
+    data = df.head(10).to_dict('records')
+    
+    return columns, data
