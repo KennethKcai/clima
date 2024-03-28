@@ -230,6 +230,7 @@ def switch_si_ip(ts, si_ip_input, url_store, lines):
         Output("tab-data-explorer", "disabled"),
         Output("tab-outdoor-comfort", "disabled"),
         Output("tab-natural-ventilation", "disabled"),
+        Output("tab-clima-AI", "disabled"),
         Output("banner-subtitle", "children"),
     ],
     [
@@ -250,10 +251,12 @@ def enable_tabs_when_data_is_loaded(meta, data):
             True,
             True,
             True,
+            True,
             default,
         )
     else:
         return (
+            False,
             False,
             False,
             False,

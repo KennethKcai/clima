@@ -12,6 +12,7 @@ from my_project.global_scheme import (
     month_lst,
     mapping_dictionary,
 )
+
 from my_project.utils import dropdown
 from dash.dependencies import Input, Output, State
 

@@ -17,6 +17,7 @@ from my_project.tab_summary.app_summary import layout_summary
 from my_project.tab_sun.app_sun import layout_sun
 from my_project.tab_t_rh.app_t_rh import layout_t_rh
 from my_project.tab_wind.app_wind import layout_wind
+from my_project.tab_clima_AI.app_clima_AI import layout_clima_AI
 
 server = app.server
 
@@ -72,6 +73,8 @@ def render_content(tab, si_ip):
         return layout_natural_ventilation(si_ip)
     elif tab == "tab-psy-chart":
         return layout_psy_chart()
+    elif tab == "tab-clima-AI":
+        return layout_clima_AI()
     else:
         return "404"
 
