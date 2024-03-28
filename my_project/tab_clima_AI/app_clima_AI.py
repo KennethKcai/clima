@@ -13,10 +13,10 @@ def layout_clima_AI():
                 ),
                 width=10  # 指定这列的宽度。Bootstrap 默认一行为 12 单位宽
             ),
-            dbc.Col(  # 另一列
+            dbc.Col(  
                 html.Button('Submit', id='new-tab-button', className='btn btn-primary'),
-                width=2  # 指定这列的宽度。两列加起来占据整行
+                width=2  
             )
         ]),
-        html.Div(id='new-tab-output')  # 这个 Div 用来显示按钮点击后的输出
+        html.Div(id='new-tab-output')  
     ])
