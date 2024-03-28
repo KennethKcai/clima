@@ -57,7 +57,7 @@ def layout_summary(si_ip):
                             tooltip_text="Use the following buttons to download either the Clima sourcefile or the EPW file",
                         ),
                     ),
-                    dbc.Button("Show Top 10 Rows", id="show-top-btn", n_clicks=0, className="mb-3"),
+                    dbc.Button("Show Top 10 DataFrame Rows", id="show-top-btn", n_clicks=0, className="mb-3"),
                     dash_table.DataTable(
                         id='top-10-table',
                         columns=[],  # 将在回调中设置
