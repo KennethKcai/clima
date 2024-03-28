@@ -14,7 +14,7 @@ def layout_clima_AI():
                 width=10  # 指定这列的宽度。Bootstrap 默认一行为 12 单位宽
             ),
             dbc.Col(  
-                html.Button('Submit', id='new-tab-button', className='btn btn-primary'),
+                html.Button('Submit', id='new-tab-button', className='btn btn-primary btn-black'),
                 width=2  
             )
         ]),
