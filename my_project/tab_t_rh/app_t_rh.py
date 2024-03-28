@@ -39,11 +39,22 @@ def layout_t_rh():
                 className="container-col",
                 children=[
                     html.Div(
-                        children=title_with_link(
-                            text="Yearly chart",
-                            id_button="yearly-chart-label",
-                            doc_link="https://cbe-berkeley.gitbook.io/clima/documentation/tabs-explained/temperature-and-humidity/temperatures-explained",
-                        ),
+                        className="container-row align-items-center",  # 使用行容器并垂直居中对齐子元素
+                        children=[
+                            # 标题和链接
+                            title_with_link(
+                                text="Yearly chart",
+                                id_button="yearly-chart-label",
+                                doc_link="https://cbe-berkeley.gitbook.io/clima/documentation/tabs-explained/temperature-and-humidity/temperatures-explained",
+                            ),
+                            # AI按钮
+                            html.Button(
+                                "AI",
+                                id="ai-button",
+                                n_clicks=0,
+                                className="ml-2 btn btn-dark btn-sm"  # 按钮样式类，ml-2 为左外边距
+                            ),
+                        ]
                     ),
                     dcc.Loading(
                         type="circle",
