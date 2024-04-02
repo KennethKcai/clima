@@ -6,7 +6,7 @@ def layout_clima_AI():
         dbc.Row(
             dbc.Col(
                 html.Button('AI Summary', id='ai-summary-btn', className='btn btn-secondary mb-3 btn-dark'),  
-                width={"size": 6, "offset": 3}  # 使按钮居中显示
+                width=2  # 使按钮居中显示
             )
         ),
         dbc.Row([  # 创建一行
@@ -27,3 +27,4 @@ def layout_clima_AI():
         html.Div(id='new-tab-output'),
         html.Div(id='ai-summary-output')  # 用于显示AI总结的输出
     ])
+
