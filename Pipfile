@@ -14,6 +14,8 @@ requests = "*"
 plotly = "*"
 pandas = "*"
 numpy = "*"
+python-dotenv = "*"
+openai = "*"
 
 [dev-packages]
 cleanpy = "*"

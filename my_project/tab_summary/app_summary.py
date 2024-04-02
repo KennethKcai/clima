@@ -4,7 +4,7 @@ import plotly.graph_objects as go
 import requests
 from dash.exceptions import PreventUpdate
 from dash_extensions.enrich import dcc, html, Output, Input, State
-import dash_table
+from dash import dash_table
 import pandas as pd
 
 from app import app
@@ -533,7 +533,7 @@ def download_clima_dataframe(n_clicks, meta):
     [Output('top-10-table', 'columns'),
      Output('top-10-table', 'data')],
     [Input('show-top-btn', 'n_clicks')],  # 假设您有一个按钮ID为'show-top-btn'
-    [State('df-store', 'data')],  # 假设您的DataFrame以JSON格式存储在客户端的Store组件中
+    [State('df-store', 'data')],  
     prevent_initial_call=True  # 防止在页面加载时自动调用
 )
 def show_top_10_data(n_clicks, df):
