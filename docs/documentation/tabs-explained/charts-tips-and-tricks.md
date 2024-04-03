@@ -1,2 +1,0 @@
-# Charts Tips and tricks
-
