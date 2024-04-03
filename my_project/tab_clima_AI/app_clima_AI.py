@@ -2,6 +2,8 @@ from dash import Dash, dcc, html, Input, Output, State, callback_context
 import dash_bootstrap_components as dbc
 from dotenv import load_dotenv
 import openai
+from app import app
+
 load_dotenv()  # 读取 .env 文件中的环境变量
 
 import os
@@ -35,28 +37,28 @@ def layout_clima_AI():
         html.Div(id='ai-summary-output')  # 用于显示AI总结的输出
     ])
 
-@app.callback(
-    Output('ai-summary-output', 'children'),
-    [Input('ai-summary-btn', 'n_clicks')],
-    [State('df-store', 'data')]
-)
-def get_ai_summary(n_clicks, df_json):
-    triggered_id = callback_context.triggered[0]['prop_id'].split('.')[0]
-    if n_clicks is None or df_json is None or triggered_id != 'ai-summary-btn':
-        raise PreventUpdate
+# @app.callback(
+#     Output('ai-summary-output', 'children'),
+#     [Input('ai-summary-btn', 'n_clicks')],
+#     [State('df-store', 'data')]
+# )
+# def get_ai_summary(n_clicks, df_json):
+#     triggered_id = callback_context.triggered[0]['prop_id'].split('.')[0]
+#     if n_clicks is None or df_json is None or triggered_id != 'ai-summary-btn':
+#         raise PreventUpdate
 
     
-    # 创建摘要请求
-    prompt = "Summarize the following data: \n\n" + df_json.head(10).to_string(index=False) + "\n\nSummary:"
+#     # 创建摘要请求
+#     prompt = "Summarize the following data: \n\n" + df_json.head(10).to_string(index=False) + "\n\nSummary:"
 
-    response = openai.Completion.create(
-        engine="text-davinci-003",  # 根据你的API版本选择合适的engine
-        prompt=prompt,
-        max_tokens=150  # 设置最大的token数量
-    )
+#     response = openai.Completion.create(
+#         engine="text-davinci-003",  # 根据你的API版本选择合适的engine
+#         prompt=prompt,
+#         max_tokens=150  # 设置最大的token数量
+#     )
 
-    summary = response.choices[0].text.strip() if response else "Failed to get summary."
-    return html.Div(summary)
+#     summary = response.choices[0].text.strip() if response else "Failed to get summary."
+#     return html.Div(summary)
 
-if __name__ == '__main__':
-    app.run_server(debug=True)
+# if __name__ == '__main__':
+#     app.run_server(debug=True)
