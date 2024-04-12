@@ -61,6 +61,12 @@ def layout_t_rh():
                         children=html.Div(id="yearly-chart"),
                     ),
                     html.Div(
+                        className="text-box",
+                        children=[
+                            html.P(id='ai-output', children='AI output will appear here after button click.')
+                        ]
+                    ),
+                    html.Div(
                         children=title_with_link(
                             text="Daily chart",
                             id_button="daily-chart-label",
