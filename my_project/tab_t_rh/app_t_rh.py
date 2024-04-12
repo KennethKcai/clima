@@ -3,6 +3,9 @@ from dash_extensions.enrich import Output, Input, State
 from dash.exceptions import PreventUpdate
 import requests
 import json
+import pandas as pd
+import numpy as np
+from datetime import datetime
 
 from app import app
 from my_project.global_scheme import dropdown_names
@@ -150,11 +153,19 @@ def update_yearly_chart(ts, global_local, dd_value, df, meta, si_ip):
 @app.callback(
     Output('ai-output', 'children'),
     Input('ai-button', 'n_clicks'),
-    State('store-dbt-yearly-data', 'data')  # store data from API
+    State('df-store', 'data')  # store data from API
+    # State('store-dbt-yearly-data', 'data')  # store data from yearly chart
 )
-def update_output(n_clicks, json_data):
-    if n_clicks is None or json_data is None:
+def update_output(n_clicks, df):
+    if n_clicks is None or df is None:
         raise PreventUpdate
+
+    df = df.copy()
+    # for col in df.select_dtypes(include=['datetime']):
+    #     df[col] = df[col].astype(str)
+
+    data_list = df.head(5).to_dict(orient='records')
+    json_data = json.dumps(data_list, default=default_serializer)
 
     # API endpoint
     url = "https://api.zerowidth.ai/beta/process/XmZlDB2W1HFIzS7fmawI/fI8ys5r4pBiTnLdlQJdS"
@@ -174,10 +185,16 @@ def update_output(n_clicks, json_data):
     }
 
     response = requests.post(url, json=data, headers=headers)
-    print(response.json())
     if response.status_code == 200:
-        return response.json()  # return AI output
-    return 'Error: API call failed'
+        json_response = response.json()
+        content = json_response.get("output_data", {}).get("content", "")
+        if content:
+            return dcc.Markdown(content)
+        else:
+            return html.Div('Error: Content is empty')
+    else:
+
+        return html.Div('Error: API call failed')
 
 
 
@@ -271,3 +288,16 @@ def update_table(ts, dd_value, df, si_ip):
     return summary_table_tmp_rh_tab(
         df[["month", "hour", dd_value, "month_names"]], dd_value, si_ip
     )
+
+
+def default_serializer(obj):
+    """JSON serializer for extra types."""
+    if isinstance(obj, (datetime, pd.Timestamp)):
+        return obj.isoformat()
+    elif isinstance(obj, (pd.Timedelta, np.timedelta64)):
+        return str(obj)
+    elif isinstance(obj, (np.ndarray, pd.Series)):
+        return obj.tolist()
+    elif isinstance(obj, np.generic):
+        return obj.item()
+    raise TypeError(f"Object of type {obj.__class__.__name__} is not JSON serializable")
