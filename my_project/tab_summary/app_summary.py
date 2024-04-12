@@ -4,7 +4,7 @@ import plotly.graph_objects as go
 import requests
 from dash.exceptions import PreventUpdate
 from dash_extensions.enrich import dcc, html, Output, Input, State
-import dash_table
+from dash import dash_table
 import pandas as pd
 
 from app import app

@@ -1,5 +1,8 @@
 from dash import dcc, html
 from dash_extensions.enrich import Output, Input, State
+from dash.exceptions import PreventUpdate
+import requests
+import json
 
 from app import app
 from my_project.global_scheme import dropdown_names
@@ -105,8 +108,10 @@ def layout_t_rh():
 
 
 @app.callback(
-    Output("yearly-chart", "children"),
-    Output("store-dbt-yearly-data", "data")
+    [
+        Output("yearly-chart", "children"),
+        Output("store-dbt-yearly-data", "data")
+    ],
     [
         Input("df-store", "modified_timestamp"),
         Input("global-local-radio-input", "value"),
@@ -141,6 +146,40 @@ def update_yearly_chart(ts, global_local, dd_value, df, meta, si_ip):
         data = rh_yearly.data  # store data for AI
         return graph, data
     
+
+@app.callback(
+    Output('ai-output', 'children'),
+    Input('ai-button', 'n_clicks'),
+    State('store-dbt-yearly-data', 'data')  # store data from API
+)
+def update_output(n_clicks, json_data):
+    if n_clicks is None or json_data is None:
+        raise PreventUpdate
+
+    # API endpoint
+    url = "https://api.zerowidth.ai/beta/process/XmZlDB2W1HFIzS7fmawI/fI8ys5r4pBiTnLdlQJdS"
+    headers = {
+        "Authorization": "Bearer sk0w-e1b943077ab9f86493693118eca0dfeb",
+        "Content-Type": "application/json"
+    }
+    
+    print(json_data)
+    # Prepare data for API
+    data = {
+        "data": {
+            "variables": {
+                "DATA": json_data
+            }
+        }
+    }
+
+    response = requests.post(url, json=data, headers=headers)
+    print(response.json())
+    if response.status_code == 200:
+        return response.json()  # return AI output
+    return 'Error: API call failed'
+
+
 
 @app.callback(
     Output("daily", "children"),
