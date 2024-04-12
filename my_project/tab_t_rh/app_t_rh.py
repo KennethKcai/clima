@@ -106,6 +106,7 @@ def layout_t_rh():
 
 @app.callback(
     Output("yearly-chart", "children"),
+    Output("store-dbt-yearly-data", "data")
     [
         Input("df-store", "modified_timestamp"),
         Input("global-local-radio-input", "value"),
@@ -122,19 +123,24 @@ def update_yearly_chart(ts, global_local, dd_value, df, meta, si_ip):
         dbt_yearly = yearly_profile(df, "DBT", global_local, si_ip)
         dbt_yearly.update_layout(xaxis=dict(rangeslider=dict(visible=True)))
         units = generate_units_degree(si_ip)
-        return dcc.Graph(
+        # print(dbt_yearly.data)
+        graph = dcc.Graph(
             config=generate_chart_name("DryBulbTemperature_yearly", meta, units),
-            figure=dbt_yearly,
+            figure=dbt_yearly
         )
+        data = dbt_yearly.data  # store data for AI
+        return graph, data
     else:
         rh_yearly = yearly_profile(df, "RH", global_local, si_ip)
         rh_yearly.update_layout(xaxis=dict(rangeslider=dict(visible=True)))
         units = generate_units(si_ip)
-        return dcc.Graph(
+        graph =  dcc.Graph(
             config=generate_chart_name("RelativeHumidity_yearly", meta, units),
             figure=rh_yearly,
         )
-
+        data = rh_yearly.data  # store data for AI
+        return graph, data
+    
 
 @app.callback(
     Output("daily", "children"),

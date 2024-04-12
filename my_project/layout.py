@@ -215,7 +215,7 @@ def build_tabs():
                         selected_className="custom-tab--selected",
                         disabled=True,
                     ),
-                    dcc.Tab(
+                    dcc.Tab( #added tab for AI
                         id="tab-clima-AI",
                         label="clima AI",
                         value="tab-clima-AI",
@@ -244,6 +244,7 @@ def store():
                     dcc.Store(id="url-store", storage_type="session"),
                     dcc.Store(id="si-ip-unit-store", storage_type="session"),
                     dcc.Store(id="lines-store", storage_type="session"),
+                    dcc.Store(id="store-dbt-yearly-data", storage_type="session"), #store for yearly data
                 ],
                 fullscreen=True,
                 type="dot",

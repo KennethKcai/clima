@@ -6,18 +6,18 @@ def layout_clima_AI():
         dbc.Row(
             dbc.Col(
                 html.Button('AI Summary', id='ai-summary-btn', className='btn btn-secondary mb-3 btn-dark'),  
-                width=2  # 使按钮居中显示
+                width=2  
             )
         ),
-        dbc.Row([  # 创建一行
-            dbc.Col(  # 创建一列
+        dbc.Row([  
+            dbc.Col( 
                 dcc.Input(
                     id='new-tab-input',
                     type='text',
                     placeholder='Asking clima AI...',
-                    className='form-control'  # 使用 Bootstrap 类来增加样式
+                    className='form-control'  
                 ),
-                width=10  # 指定这列的宽度。Bootstrap 默认一行为 12 单位宽
+                width=10  
             ),
             dbc.Col(
                 html.Button('Submit', id='new-tab-button', className='btn btn-primary btn-black'),
@@ -25,6 +25,6 @@ def layout_clima_AI():
             )
         ]),
         html.Div(id='new-tab-output'),
-        html.Div(id='ai-summary-output')  # 用于显示AI总结的输出
+        html.Div(id='ai-summary-output')  
     ])
 
