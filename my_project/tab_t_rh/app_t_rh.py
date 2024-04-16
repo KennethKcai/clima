@@ -153,19 +153,53 @@ def update_yearly_chart(ts, global_local, dd_value, df, meta, si_ip):
 @app.callback(
     Output('ai-output', 'children'),
     Input('ai-button', 'n_clicks'),
-    State('df-store', 'data')  # store data from API
-    # State('store-dbt-yearly-data', 'data')  # store data from yearly chart
+    # State('df-store', 'data')  # store data from API
+    State('store-dbt-yearly-data', 'data')  # store data from yearly chart
 )
 def update_output(n_clicks, df):
     if n_clicks is None or df is None:
         raise PreventUpdate
 
-    df = df.copy()
-    # for col in df.select_dtypes(include=['datetime']):
-    #     df[col] = df[col].astype(str)
+    y_values = [item['y'] for item in df if 'y' in item]
+    base_values = [item['base'] for item in df if 'base' in item]
 
-    data_list = df.head(5).to_dict(orient='records')
-    json_data = json.dumps(data_list, default=default_serializer)
+    rounded_data_y = [[round(num, 1) for num in sublist] for sublist in y_values]
+    rounded_data_base = [[round(num, 1) for num in sublist] for sublist in base_values]
+
+    # print(rounded_data_y[0])
+    # print(rounded_data_base[0])
+
+    def generate_range_list(y_values, base_values):
+        lst_range_min = []
+        lst_range_max = []
+
+        for i in range(len(base_values)):
+            range_min = base_values[i]
+            lst_range_min.append(range_min)
+            range_max = base_values[i] + y_values[i]
+            lst_range_max.append(range_max)
+        
+        lst_range = []
+        for i in range(len(lst_range_min)):
+            range_item = [lst_range_min[i], lst_range_max[i]]
+            lst_range.append(range_item)
+        
+        return lst_range
+
+    lst_range_80 = generate_range_list(rounded_data_y[0], rounded_data_base[0])
+    lst_range_90 = generate_range_list(rounded_data_y[1], rounded_data_base[1])
+
+    temp_data = rounded_data_y[3]
+    tem_range = rounded_data_y[2]
+
+    data_with_description = {
+        "ASHRAE adaptive comfort (80%) for 80 percentile from the first date to the last date of the year": lst_range_80,
+        "ASHRAE adaptive comfort (80%) for 90 percentile from the first date to the last date of the year": lst_range_90,
+        "daily temperature average from the first date to the last date of the year": temp_data,
+        "daily temperature range from the first date to the last date of the year": tem_range
+    }
+
+    json_data = json.dumps(data_with_description, indent=4)
 
     # API endpoint
     url = "https://api.zerowidth.ai/beta/process/XmZlDB2W1HFIzS7fmawI/fI8ys5r4pBiTnLdlQJdS"
