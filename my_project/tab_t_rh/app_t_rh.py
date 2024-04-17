@@ -160,15 +160,18 @@ def update_output(n_clicks, df):
     if n_clicks is None or df is None:
         raise PreventUpdate
 
+    # get the y data and base values
     y_values = [item['y'] for item in df if 'y' in item]
     base_values = [item['base'] for item in df if 'base' in item]
 
+    # round the data to 1 decimal place
     rounded_data_y = [[round(num, 1) for num in sublist] for sublist in y_values]
     rounded_data_base = [[round(num, 1) for num in sublist] for sublist in base_values]
 
     # print(rounded_data_y[0])
     # print(rounded_data_base[0])
-
+    
+    # function to generate range list
     def generate_range_list(y_values, base_values):
         lst_range_min = []
         lst_range_max = []
@@ -192,6 +195,7 @@ def update_output(n_clicks, df):
     temp_data = rounded_data_y[3]
     tem_range = rounded_data_y[2]
 
+    # restructuring the input json data with 4 sections
     data_with_description = {
         "ASHRAE adaptive comfort (80%) for 80 percentile from the first date to the last date of the year": lst_range_80,
         "ASHRAE adaptive comfort (80%) for 90 percentile from the first date to the last date of the year": lst_range_90,
