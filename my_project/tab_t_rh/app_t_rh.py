@@ -26,6 +26,7 @@ var_to_plot = ["Dry bulb temperature", "Relative humidity"]
 def layout_t_rh():
     return html.Div(
         className="container-row full-width",
+        # style={'position': 'relative'},
         children=[
             # 主内容区域
             html.Div(
@@ -116,7 +117,11 @@ def layout_t_rh():
                             'position': 'fixed', 
                             'width': '30%', 
                             'height': '100vh',  # 设定高度为视窗高度
-                            'overflow': 'auto'  # 自动显示滚动条
+                            'overflow': 'auto',  # 自动显示滚动条
+                            'background-color': '#000000',  # 黑色背景
+                            'color': '#d3d3d3',  # 灰色文字
+                            'padding': '20px',  # 内边距
+                            'border-radius': '15px',  # 圆角边框
                         },
                         children=[
                             html.P(id='ai-output', children='AI output will appear here after button click.' * 50)  # 增加文本长度来演示滚动效果
