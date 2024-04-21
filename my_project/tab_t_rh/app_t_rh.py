@@ -29,9 +29,11 @@ def layout_t_rh():
         # style={'position': 'relative'},
         children=[
             # 主内容区域
+
             html.Div(
+                id='main-content',
                 className="container-col",
-                style={'width': '70%'},  # 占据剩余的70%宽度
+                style={'width': '100%'},  # 占据剩余的70%宽度
                 children=[
                     html.Div(
                         className="container-row full-width align-center justify-center",
@@ -108,24 +110,25 @@ def layout_t_rh():
             ),
             # 独立的 textbox 区域
             html.Div(
+                id='text-box-container',
                 className="container-col full-height",
-                style={'width': '30%'},  # 占据30%的宽度
+                style={'width': '30%', 'display': 'none'},  # 初始隐藏
                 children=[
-                    html.Div(
-                        className="text-box",
-                        style={
-                            'position': 'fixed', 
-                            'width': '30%', 
-                            'height': '100vh',  # 设定高度为视窗高度
-                            'overflow': 'auto',  # 自动显示滚动条
-                            'background-color': '#000000',  # 黑色背景
-                            'color': '#d3d3d3',  # 灰色文字
-                            'padding': '20px',  # 内边距
-                            'border-radius': '15px',  # 圆角边框
-                        },
+                    dcc.Loading(
+                        id="loading-ai-output",
                         children=[
-                            html.P(id='ai-output', children='AI output will appear here after button click.' * 50)  # 增加文本长度来演示滚动效果
-                        ]
+                            html.Div(
+                                id='ai-output',
+                                className="text-box",
+                                style={
+                                    'height': '100vh', 'overflow': 'auto', 
+                                    'background-color': '#000000', 'color': '#d3d3d3',
+                                    'padding': '20px', 'border-radius': '15px',
+                                },
+                                children=[html.P("AI output will appear here after button click." * 50)]
+                            )
+                        ],
+                        type="circle",  # 指定加载指示器的样式
                     ),
                 ]
             )
@@ -172,90 +175,60 @@ def update_yearly_chart(ts, global_local, dd_value, df, meta, si_ip):
         data = rh_yearly.data  # store data for AI
         return graph, data
     
+@app.callback(
+    [Output('text-box-container', 'style'),
+     Output('main-content', 'style')],
+    [Input('ai-button', 'n_clicks')]
+)
+def toggle_textbox_visibility(n_clicks):
+    if n_clicks is None:
+        raise PreventUpdate
+
+    if n_clicks % 2 == 0:
+        return {'display': 'none'}, {'width': '100%'}
+    else:
+        return {'width': '30%', 'display': 'block'}, {'width': '70%'}
 
 @app.callback(
     Output('ai-output', 'children'),
-    Input('ai-button', 'n_clicks'),
-    # State('df-store', 'data')  # store data from API
-    State('store-dbt-yearly-data', 'data')  # store data from yearly chart
+    [Input('text-box-container', 'style')],
+    [State('store-dbt-yearly-data', 'data')]
 )
-def update_output(n_clicks, df):
-    if n_clicks is None or df is None:
-        raise PreventUpdate
+def update_output(textbox_style, df):
+    if textbox_style['display'] == 'none' or df is None:
+        return PreventUpdate
 
-    # get the y data and base values
-    y_values = [item['y'] for item in df if 'y' in item]
-    base_values = [item['base'] for item in df if 'base' in item]
+    try:
+        y_values = [item['y'] for item in df if 'y' in item]
+        base_values = [item['base'] for item in df if 'base' in item]
+        rounded_data_y = [[round(num, 1) for num in sublist] for sublist in y_values]
+        rounded_data_base = [[round(num, 1) for num in sublist] for sublist in base_values]
 
-    # round the data to 1 decimal place
-    rounded_data_y = [[round(num, 1) for num in sublist] for sublist in y_values]
-    rounded_data_base = [[round(num, 1) for num in sublist] for sublist in base_values]
+        lst_range_80 = [[base + y, base] for base, y in zip(rounded_data_base[0], rounded_data_y[0])]
+        lst_range_90 = [[base + y, base] for base, y in zip(rounded_data_base[1], rounded_data_y[1])]
 
-    # print(rounded_data_y[0])
-    # print(rounded_data_base[0])
-    
-    # function to generate range list
-    def generate_range_list(y_values, base_values):
-        lst_range_min = []
-        lst_range_max = []
-
-        for i in range(len(base_values)):
-            range_min = base_values[i]
-            lst_range_min.append(range_min)
-            range_max = base_values[i] + y_values[i]
-            lst_range_max.append(range_max)
-        
-        lst_range = []
-        for i in range(len(lst_range_min)):
-            range_item = [lst_range_min[i], lst_range_max[i]]
-            lst_range.append(range_item)
-        
-        return lst_range
-
-    lst_range_80 = generate_range_list(rounded_data_y[0], rounded_data_base[0])
-    lst_range_90 = generate_range_list(rounded_data_y[1], rounded_data_base[1])
-
-    temp_data = rounded_data_y[3]
-    tem_range = rounded_data_y[2]
-
-    # restructuring the input json data with 4 sections
-    data_with_description = {
-        "ASHRAE adaptive comfort (80%) for 80 percentile from the first date to the last date of the year": lst_range_80,
-        "ASHRAE adaptive comfort (80%) for 90 percentile from the first date to the last date of the year": lst_range_90,
-        "daily temperature average from the first date to the last date of the year": temp_data,
-        "daily temperature range from the first date to the last date of the year": tem_range
-    }
-
-    json_data = json.dumps(data_with_description, indent=4)
-
-    # API endpoint
-    url = "https://api.zerowidth.ai/beta/process/XmZlDB2W1HFIzS7fmawI/fI8ys5r4pBiTnLdlQJdS"
-    headers = {
-        "Authorization": "Bearer sk0w-e1b943077ab9f86493693118eca0dfeb",
-        "Content-Type": "application/json"
-    }
-    
-    print(json_data)
-    # Prepare data for API
-    data = {
-        "data": {
-            "variables": {
-                "DATA": json_data
-            }
+        data_with_description = {
+            "ASHRAE adaptive comfort (80%)": lst_range_80,
+            "ASHRAE adaptive comfort (90%)": lst_range_90,
+            "Daily temperature average": rounded_data_y[3],
+            "Daily temperature range": rounded_data_y[2]
         }
-    }
+        json_data = json.dumps(data_with_description, indent=4)
 
-    response = requests.post(url, json=data, headers=headers)
-    if response.status_code == 200:
-        json_response = response.json()
-        content = json_response.get("output_data", {}).get("content", "")
-        if content:
-            return dcc.Markdown(content)
+        url = "https://api.zerowidth.ai/beta/process/XmZlDB2W1HFIzS7fmawI/fI8ys5r4pBiTnLdlQJdS"
+        headers = {
+            "Authorization": "Bearer sk0w-e1b943077ab9f86493693118eca0dfeb",
+            "Content-Type": "application/json"
+        }
+        
+        response = requests.post(url, json={'data': {'variables': {'DATA': json_data}}}, headers=headers)
+        if response.status_code == 200:
+            content = response.json().get("output_data", {}).get("content", "")
+            return dcc.Markdown(content) if content else "Content is empty"
         else:
-            return html.Div('Error: Content is empty')
-    else:
-
-        return html.Div('Error: API call failed')
+            return f"API Error: {response.status_code}"
+    except Exception as e:
+        return f"Error processing data: {str(e)}"
 
 
 
