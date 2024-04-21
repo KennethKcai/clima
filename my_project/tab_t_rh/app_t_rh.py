@@ -25,87 +25,105 @@ var_to_plot = ["Dry bulb temperature", "Relative humidity"]
 
 def layout_t_rh():
     return html.Div(
-        className="container-col full-width",
+        className="container-row full-width",
         children=[
-            html.Div(
-                className="container-row full-width align-center justify-center",
-                children=[
-                    html.H4(
-                        className="text-next-to-input", children=["Select a variable: "]
-                    ),
-                    dropdown(
-                        id="dropdown",
-                        className="dropdown-t-rh",
-                        options={var: dropdown_names[var] for var in var_to_plot},
-                        value=dropdown_names[var_to_plot[0]],
-                    ),
-                ],
-            ),
+            # 主内容区域
             html.Div(
                 className="container-col",
+                style={'width': '70%'},  # 占据剩余的70%宽度
                 children=[
                     html.Div(
-                        className="container-row align-items-center",  
+                        className="container-row full-width align-center justify-center",
                         children=[
-                        
-                            title_with_link(
-                                text="Yearly chart",
-                                id_button="yearly-chart-label",
-                                doc_link="https://cbe-berkeley.gitbook.io/clima/documentation/tabs-explained/temperature-and-humidity/temperatures-explained",
+                            html.H4(
+                                className="text-next-to-input", children=["Select a variable: "]
                             ),
-                            
-                            html.Button(
-                                "AI",
-                                id="ai-button",
-                                n_clicks=0,
-                                className="ml-2 btn btn-dark btn-sm"  
+                            dropdown(
+                                id="dropdown",
+                                className="dropdown-t-rh",
+                                options={var: dropdown_names[var] for var in var_to_plot},
+                                value=dropdown_names[var_to_plot[0]],
                             ),
-                        ]
+                        ],
                     ),
-                    dcc.Loading(
-                        type="circle",
-                        children=html.Div(id="yearly-chart"),
+                    html.Div(
+                        className="container-col",
+                        children=[
+                            html.Div(
+                                className="container-row align-items-center",  
+                                children=[
+                                    title_with_link(
+                                        text="Yearly chart",
+                                        id_button="yearly-chart-label",
+                                        doc_link="https://cbe-berkeley.gitbook.io/clima/documentation/tabs-explained/temperature-and-humidity/temperatures-explained",
+                                    ),
+                                    html.Button(
+                                        "AI",
+                                        id="ai-button",
+                                        n_clicks=0,
+                                        className="ml-2 btn btn-dark btn-sm"
+                                    ),
+                                ]
+                            ),
+                            dcc.Loading(
+                                type="circle",
+                                children=html.Div(id="yearly-chart"),
+                            ),
+                            html.Div(
+                                children=title_with_link(
+                                    text="Daily chart",
+                                    id_button="daily-chart-label",
+                                    doc_link="https://cbe-berkeley.gitbook.io/clima/documentation/tabs-explained/temperature-and-humidity/temperatures-explained",
+                                ),
+                            ),
+                            dcc.Loading(
+                                type="circle",
+                                children=html.Div(id="daily"),
+                            ),
+                            html.Div(
+                                children=title_with_link(
+                                    text="Heatmap chart",
+                                    id_button="heatmap-chart-label",
+                                    doc_link="https://cbe-berkeley.gitbook.io/clima/documentation/tabs-explained/temperature-and-humidity/temperatures-explained",
+                                ),
+                            ),
+                            dcc.Loading(
+                                type="circle",
+                                children=html.Div(id="heatmap"),
+                            ),
+                            html.Div(
+                                children=title_with_tooltip(
+                                    text="Descriptive statistics",
+                                    tooltip_text="count, mean, std, min, max, and percentiles",
+                                    id_button="table-tmp-rh",
+                                ),
+                            ),
+                            html.Div(
+                                id="table-tmp-hum",
+                            ),
+                        ],
                     ),
+                ]
+            ),
+            # 独立的 textbox 区域
+            html.Div(
+                className="container-col full-height",
+                style={'width': '30%'},  # 占据30%的宽度
+                children=[
                     html.Div(
                         className="text-box",
+                        style={
+                            'position': 'fixed', 
+                            'width': '30%', 
+                            'height': '100vh',  # 设定高度为视窗高度
+                            'overflow': 'auto'  # 自动显示滚动条
+                        },
                         children=[
-                            html.P(id='ai-output', children='AI output will appear here after button click.')
+                            html.P(id='ai-output', children='AI output will appear here after button click.' * 50)  # 增加文本长度来演示滚动效果
                         ]
                     ),
-                    html.Div(
-                        children=title_with_link(
-                            text="Daily chart",
-                            id_button="daily-chart-label",
-                            doc_link="https://cbe-berkeley.gitbook.io/clima/documentation/tabs-explained/temperature-and-humidity/temperatures-explained",
-                        ),
-                    ),
-                    dcc.Loading(
-                        type="circle",
-                        children=html.Div(id="daily"),
-                    ),
-                    html.Div(
-                        children=title_with_link(
-                            text="Heatmap chart",
-                            id_button="heatmap-chart-label",
-                            doc_link="https://cbe-berkeley.gitbook.io/clima/documentation/tabs-explained/temperature-and-humidity/temperatures-explained",
-                        ),
-                    ),
-                    dcc.Loading(
-                        type="circle",
-                        children=html.Div(id="heatmap"),
-                    ),
-                    html.Div(
-                        children=title_with_tooltip(
-                            text="Descriptive statistics",
-                            tooltip_text="count, mean, std, min, max, and percentiles",
-                            id_button="table-tmp-rh",
-                        ),
-                    ),
-                    html.Div(
-                        id="table-tmp-hum",
-                    ),
-                ],
-            ),
+                ]
+            )
         ],
     )
 
