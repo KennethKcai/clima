@@ -121,17 +121,30 @@ def layout_t_rh():
                                 id='ai-output',
                                 className="text-box",
                                 style={
-                                    'height': '100vh', 'overflow': 'auto', 
-                                    'background-color': '#000000', 'color': '#d3d3d3',
-                                    'padding': '20px', 'border-radius': '15px',
+                                    'height': '100vh', 
+                                    'overflow': 'auto', 
+                                    # 'position': 'fixed',
+                                    'background-color': '#ededed',  # 修改背景颜色为灰色
+                                    'color': '#4a4a49',  # 修改文本颜色为黑色
+                                    'padding': '20px', 
+                                    'border-radius': '15px',
                                 },
-                                children=[html.P("AI output will appear here after button click." * 50)]
+                            
+                                children=[
+                                    html.P(
+                                        "AI output will appear here after button click." * 50,
+                                        style={
+                                            'fontSize': '10px'  # 减小字体大小
+                                        }
+                                    )
+                                ]
                             )
                         ],
                         type="circle",  # 指定加载指示器的样式
                     ),
                 ]
             )
+
         ],
     )
 
@@ -224,7 +237,12 @@ def update_output(textbox_style, df):
         response = requests.post(url, json={'data': {'variables': {'DATA': json_data}}}, headers=headers)
         if response.status_code == 200:
             content = response.json().get("output_data", {}).get("content", "")
-            return dcc.Markdown(content) if content else "Content is empty"
+            if content:
+            # 将自定义文本与API返回的Markdown内容合并
+                full_content = "### Year Chart AI analysis:\n\n " + content
+                return dcc.Markdown(full_content)
+            else:
+                return "Content is empty"
         else:
             return f"API Error: {response.status_code}"
     except Exception as e:
