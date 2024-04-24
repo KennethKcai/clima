@@ -1,10 +1,14 @@
+import dash
 from dash import dcc, html
 from dash_extensions.enrich import Output, Input, State
+from dash import callback_context
 from dash.exceptions import PreventUpdate
+from dash.dependencies import ALL
 import requests
 import json
 import pandas as pd
 import numpy as np
+import re
 from datetime import datetime
 
 from app import app
@@ -239,8 +243,14 @@ def update_output(textbox_style, df):
             content = response.json().get("output_data", {}).get("content", "")
             if content:
             # 将自定义文本与API返回的Markdown内容合并
-                full_content = "### Year Chart AI analysis:\n\n " + content
-                return dcc.Markdown(full_content)
+                months = re.findall(r'\b(JAN|FEB|MAR|APR|MAY|JUN|JULY|JUL|AUG|SEP|OCT|NOV|DEC)\b', content)
+                buttons = [html.Div([
+                    html.Button(f"Continue Analyze {month}", id={'type': 'month-button', 'index': month}, n_clicks=0),
+                    html.Div(id={'type': 'click-output', 'index': month}, style={'padding': '5px'})
+                ], style={'marginBottom': '20px'}) for month in set(months)]
+
+                full_content = f"### Year Chart AI analysis:\n\n {content}\n\n---\n\n"
+                return [dcc.Markdown(full_content)] + buttons
             else:
                 return "Content is empty"
         else:
@@ -248,7 +258,19 @@ def update_output(textbox_style, df):
     except Exception as e:
         return f"Error processing data: {str(e)}"
 
-
+# Update the click output
+@app.callback(
+    Output({'type': 'click-output', 'index': ALL}, 'children'),
+    Input({'type': 'month-button', 'index': ALL}, 'n_clicks'),
+    prevent_initial_call=True
+)
+def update_click_output(n_clicks):
+    if not n_clicks:
+        return dash.no_update
+    ctx = dash.callback_context
+    button_id = ctx.triggered[0]['prop_id'].split('.')[0]
+    month = json.loads(button_id)['index']
+    return ["Clicked" if n == 1 else "" for n in n_clicks]
 
 @app.callback(
     Output("daily", "children"),
@@ -353,3 +375,5 @@ def default_serializer(obj):
     elif isinstance(obj, np.generic):
         return obj.item()
     raise TypeError(f"Object of type {obj.__class__.__name__} is not JSON serializable")
+
+
