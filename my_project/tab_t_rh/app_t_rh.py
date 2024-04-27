@@ -9,6 +9,7 @@ import json
 import pandas as pd
 import numpy as np
 import re
+import os
 from datetime import datetime
 
 from app import app
@@ -25,6 +26,11 @@ from my_project.utils import (
 )
 
 var_to_plot = ["Dry bulb temperature", "Relative humidity"]
+design_strategy_button = html.Div([
+    html.Button("Design Strategy", id='strategy-button', n_clicks=0),
+    html.Div(id='strategy-click-output', style={'padding': '5px'})
+], style={'marginBottom': '20px'})
+
 
 
 def layout_t_rh():
@@ -180,6 +186,7 @@ def update_yearly_chart(ts, global_local, dd_value, df, meta, si_ip):
             figure=dbt_yearly
         )
         data = dbt_yearly.data  # store data for AI
+        # print(data)
         return graph, data
     else:
         rh_yearly = yearly_profile(df, "RH", global_local, si_ip)
@@ -190,6 +197,7 @@ def update_yearly_chart(ts, global_local, dd_value, df, meta, si_ip):
             figure=rh_yearly,
         )
         data = rh_yearly.data  # store data for AI
+
         return graph, data
     
 @app.callback(
@@ -245,11 +253,13 @@ def update_output(textbox_style, df):
             # 将自定义文本与API返回的Markdown内容合并
                 months = re.findall(r'\b(JAN|FEB|MAR|APR|MAY|JUN|JULY|JUL|AUG|SEP|OCT|NOV|DEC)\b', content)
                 buttons = [html.Div([
-                    html.Button(f"Continue Analyze {month}", id={'type': 'month-button', 'index': month}, n_clicks=0),
+                    html.Button(f"Continue Analyzing {month}", id={'type': 'month-button', 'index': month}, n_clicks=0),
                     html.Div(id={'type': 'click-output', 'index': month}, style={'padding': '5px'})
                 ], style={'marginBottom': '20px'}) for month in set(months)]
 
-                full_content = f"### Year Chart AI analysis:\n\n {content}\n\n---\n\n"
+                buttons.append(design_strategy_button)
+
+                full_content = f"### Yearly Chart AI analysis:\n\n {content}\n\n---\n\n"
                 return [dcc.Markdown(full_content)] + buttons
             else:
                 return "Content is empty"
