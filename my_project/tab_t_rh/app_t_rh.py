@@ -9,7 +9,6 @@ import json
 import pandas as pd
 import numpy as np
 import re
-import os
 from datetime import datetime
 
 from app import app
@@ -254,7 +253,10 @@ def update_output(textbox_style, df):
                 months = re.findall(r'\b(JAN|FEB|MAR|APR|MAY|JUN|JULY|JUL|AUG|SEP|OCT|NOV|DEC)\b', content)
                 buttons = [html.Div([
                     html.Button(f"Continue Analyzing {month}", id={'type': 'month-button', 'index': month}, n_clicks=0),
-                    html.Div(id={'type': 'click-output', 'index': month}, style={'padding': '5px'})
+                    dcc.Loading(
+                        type="circle",  # 加载动画的类型
+                        children=html.Div(id={'type': 'click-output', 'index': month}, style={'padding': '5px'})
+                    )
                 ], style={'marginBottom': '20px'}) for month in set(months)]
 
                 buttons.append(design_strategy_button)
@@ -268,19 +270,56 @@ def update_output(textbox_style, df):
     except Exception as e:
         return f"Error processing data: {str(e)}"
 
-# Update the click output
+# Update the special month click output
 @app.callback(
-    Output({'type': 'click-output', 'index': ALL}, 'children'),
-    Input({'type': 'month-button', 'index': ALL}, 'n_clicks'),
+    Output({'type': 'click-output', 'index': dash.dependencies.MATCH}, 'children'),
+    Input({'type': 'month-button', 'index': dash.dependencies.MATCH}, 'n_clicks'),
+    State({'type': 'month-button', 'index': dash.dependencies.MATCH}, 'id'),
+    State('store-dbt-yearly-data', 'data'),  # 假设这里存储的是原始数据
     prevent_initial_call=True
 )
-def update_click_output(n_clicks):
-    if not n_clicks:
-        return dash.no_update
-    ctx = dash.callback_context
-    button_id = ctx.triggered[0]['prop_id'].split('.')[0]
-    month = json.loads(button_id)['index']
-    return ["Clicked" if n == 1 else "" for n in n_clicks]
+def on_button_click(n_clicks, button_id, df):
+    if n_clicks is None or df is None:
+        raise PreventUpdate
+    
+    month = button_id['index']
+
+    try:
+        y_values = [item['y'] for item in df if 'y' in item]
+        base_values = [item['base'] for item in df if 'base' in item]
+        rounded_data_y = [[round(num, 1) for num in sublist] for sublist in y_values]
+        rounded_data_base = [[round(num, 1) for num in sublist] for sublist in base_values]
+
+        lst_range_80 = [[base + y, base] for base, y in zip(rounded_data_base[0], rounded_data_y[0])]
+        lst_range_90 = [[base + y, base] for base, y in zip(rounded_data_base[1], rounded_data_y[1])]
+
+        data_with_description = {
+            "ASHRAE adaptive comfort (80%)": lst_range_80,
+            "ASHRAE adaptive comfort (90%)": lst_range_90,
+            "Daily temperature average": rounded_data_y[3],
+            "Daily temperature range": rounded_data_y[2]
+        }
+        json_data = json.dumps(data_with_description, indent=4)
+
+        url = "https://api.zerowidth.ai/beta/process/dUakZrqR6iPgiJXslVOE/keL4947TSV17cRgaA1KM"
+        headers = {
+            "Authorization": "Bearer sk0w-d4b90953c5f969ae83fd15bbe10b3b53",
+            "Content-Type": "application/json"
+        }
+        
+        response = requests.post(url, json={'data': {'variables': {'DATA': json_data, 'MONTH': month}}}, headers=headers)
+        if response.status_code == 200:
+            content = response.json().get("output_data", {}).get("content", "")
+            if content:
+                full_content = f"### Special month AI analysis:\n\n {content}\n\n---\n\n"
+                return [dcc.Markdown(full_content)]
+            else:
+                return "Content is empty"
+        else:
+            return f"API Error: {response.status_code}"
+    except Exception as e:
+        return f"Error processing data: {str(e)}"
+
 
 @app.callback(
     Output("daily", "children"),
