@@ -161,7 +161,9 @@ def layout_t_rh():
 @app.callback(
     [
         Output("yearly-chart", "children"),
-        Output("store-dbt-yearly-data", "data")
+        Output("store-dbt-yearly-data", "data"),
+        Output("store-rh-yearly-data", "data")
+
     ],
     [
         Input("df-store", "modified_timestamp"),
@@ -186,7 +188,7 @@ def update_yearly_chart(ts, global_local, dd_value, df, meta, si_ip):
         )
         data = dbt_yearly.data  # store data for AI
         # print(data)
-        return graph, data
+        return graph, data, None
     else:
         rh_yearly = yearly_profile(df, "RH", global_local, si_ip)
         rh_yearly.update_layout(xaxis=dict(rangeslider=dict(visible=True)))
@@ -196,8 +198,8 @@ def update_yearly_chart(ts, global_local, dd_value, df, meta, si_ip):
             figure=rh_yearly,
         )
         data = rh_yearly.data  # store data for AI
-
-        return graph, data
+        # print(data)
+        return graph, None, data
     
 @app.callback(
     [Output('text-box-container', 'style'),
@@ -216,59 +218,72 @@ def toggle_textbox_visibility(n_clicks):
 @app.callback(
     Output('ai-output', 'children'),
     [Input('text-box-container', 'style')],
-    [State('store-dbt-yearly-data', 'data')]
+    [
+        State('store-dbt-yearly-data', 'data'),
+        State('store-rh-yearly-data', 'data')
+    ],
 )
-def update_output(textbox_style, df):
-    if textbox_style['display'] == 'none' or df is None:
-        return PreventUpdate
+def update_output(textbox_style, df_dbt, df_rh):
+    if df_dbt:
+        # DBT data
+        if textbox_style['display'] == 'none' or df_dbt is None:
+            return PreventUpdate
 
-    try:
-        y_values = [item['y'] for item in df if 'y' in item]
-        base_values = [item['base'] for item in df if 'base' in item]
-        rounded_data_y = [[round(num, 1) for num in sublist] for sublist in y_values]
-        rounded_data_base = [[round(num, 1) for num in sublist] for sublist in base_values]
+        try:
+            y_values = [item['y'] for item in df_dbt if 'y' in item]
+            base_values = [item['base'] for item in df_dbt if 'base' in item]
+            rounded_data_y = [[round(num, 1) for num in sublist] for sublist in y_values]
+            rounded_data_base = [[round(num, 1) for num in sublist] for sublist in base_values]
 
-        lst_range_80 = [[base + y, base] for base, y in zip(rounded_data_base[0], rounded_data_y[0])]
-        lst_range_90 = [[base + y, base] for base, y in zip(rounded_data_base[1], rounded_data_y[1])]
+            lst_range_80 = [[base + y, base] for base, y in zip(rounded_data_base[0], rounded_data_y[0])]
+            lst_range_90 = [[base + y, base] for base, y in zip(rounded_data_base[1], rounded_data_y[1])]
 
-        data_with_description = {
-            "ASHRAE adaptive comfort (80%)": lst_range_80,
-            "ASHRAE adaptive comfort (90%)": lst_range_90,
-            "Daily temperature average": rounded_data_y[3],
-            "Daily temperature range": rounded_data_y[2]
-        }
-        json_data = json.dumps(data_with_description, indent=4)
+            data_with_description = {
+                "ASHRAE adaptive comfort (80%)": lst_range_80,
+                "ASHRAE adaptive comfort (90%)": lst_range_90,
+                "Daily temperature average": rounded_data_y[3],
+                "Daily temperature range": rounded_data_y[2]
+            }
+            json_data = json.dumps(data_with_description, indent=4)
 
-        url = "https://api.zerowidth.ai/beta/process/XmZlDB2W1HFIzS7fmawI/fI8ys5r4pBiTnLdlQJdS"
-        headers = {
-            "Authorization": "Bearer sk0w-e1b943077ab9f86493693118eca0dfeb",
-            "Content-Type": "application/json"
-        }
-        
-        response = requests.post(url, json={'data': {'variables': {'DATA': json_data}}}, headers=headers)
-        if response.status_code == 200:
-            content = response.json().get("output_data", {}).get("content", "")
-            if content:
-            # 将自定义文本与API返回的Markdown内容合并
-                months = re.findall(r'\b(JAN|FEB|MAR|APR|MAY|JUN|JULY|JUL|AUG|SEP|OCT|NOV|DEC)\b', content)
-                buttons = [html.Div([
-                    html.Button(f"Continue Analyzing {month}", id={'type': 'month-button', 'index': month}, n_clicks=0),
-                    dcc.Loading(
-                        type="circle",  # 加载动画的类型
-                        children=html.Div(id={'type': 'click-output', 'index': month}, style={'padding': '5px'})
-                    )
-                ], style={'marginBottom': '20px'}) for month in set(months)]
+            url = "https://api.zerowidth.ai/beta/process/XmZlDB2W1HFIzS7fmawI/fI8ys5r4pBiTnLdlQJdS"
+            headers = {
+                "Authorization": "Bearer sk0w-e1b943077ab9f86493693118eca0dfeb",
+                "Content-Type": "application/json"
+            }
+            
+            response = requests.post(url, json={'data': {'variables': {'DATA': json_data}}}, headers=headers)
+            if response.status_code == 200:
+                content = response.json().get("output_data", {}).get("content", "")
+                if content:
+                # 将自定义文本与API返回的Markdown内容合并
+                    months = re.findall(r'\b(JAN|FEB|MAR|APR|MAY|JUN|JULY|JUL|AUG|SEP|OCT|NOV|DEC)\b', content)
+                    buttons = [html.Div([
+                        html.Button(f"Continue Analyzing {month}", id={'type': 'month-button', 'index': month}, n_clicks=0),
+                        dcc.Loading(
+                            type="circle",  # 加载动画的类型
+                            children=html.Div(id={'type': 'click-output', 'index': month}, style={'padding': '5px'})
+                        )
+                    ], style={'marginBottom': '20px'}) for month in set(months)]
 
-                buttons.append(design_strategy_button)
+                    buttons.append(design_strategy_button)
 
-                full_content = f"### Yearly Chart AI analysis:\n\n {content}\n\n---\n\n"
-                return [dcc.Markdown(full_content)] + buttons
+                    full_content = f"### Yearly Chart AI analysis:\n\n {content}\n\n---\n\n"
+                    return [dcc.Markdown(full_content)] + buttons
+                else:
+                    return "Content is empty"
             else:
-                return "Content is empty"
-        else:
-            return f"API Error: {response.status_code}"
-    except Exception as e:
-        return f"Error processing data: {str(e)}"
+                return f"API Error: {response.status_code}"
+        except Exception as e:
+            return f"Error processing data: {str(e)}"
+
+    # RH data 
+    elif df_rh:
+        if textbox_style['display'] == 'none' or df_rh is None:
+            return PreventUpdate
+
+        # print(df_rh)
+        return "RH data"
 
 # Update the special month click output
 @app.callback(

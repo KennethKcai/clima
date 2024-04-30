@@ -245,6 +245,8 @@ def store():
                     dcc.Store(id="si-ip-unit-store", storage_type="session"),
                     dcc.Store(id="lines-store", storage_type="session"),
                     dcc.Store(id="store-dbt-yearly-data", storage_type="session"), #store for yearly data
+                    dcc.Store(id="store-rh-yearly-data", storage_type="session"), #store for yearly data
+
                 ],
                 fullscreen=True,
                 type="dot",
