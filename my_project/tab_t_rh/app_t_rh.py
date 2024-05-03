@@ -46,18 +46,31 @@ def layout_t_rh():
                 children=[
                     html.Div(
                         className="container-row full-width align-center justify-center",
+                        style={'justify-content': 'space-between'},
                         children=[
-                            html.H4(
-                                className="text-next-to-input", children=["Select a variable: "]
+                            html.Div(
+                                className="container-row align-center",
+                                style={'margin-left': '18px'},
+                                children=[
+                                    html.H4(
+                                        className="text-next-to-input", children=["Select a variable: "]
+                                    ),
+                                    dropdown(
+                                        id="dropdown",
+                                        className="dropdown-t-rh",
+                                        options={var: dropdown_names[var] for var in var_to_plot},
+                                        value=dropdown_names[var_to_plot[0]],
+                                    ),
+                                ]
                             ),
-                            dropdown(
-                                id="dropdown",
-                                className="dropdown-t-rh",
-                                options={var: dropdown_names[var] for var in var_to_plot},
-                                value=dropdown_names[var_to_plot[0]],
-                            ),
+                            html.Button(
+                                "Page Summary",  # 按钮文字
+                                id="summary-button",
+                                className="ml-2 btn btn-dark btn-sm",
+                                style={'margin-right': '20px'}
+                            )
                         ],
-                    ),
+                    ), 
                     html.Div(
                         className="container-col",
                         children=[
@@ -216,7 +229,7 @@ def toggle_textbox_visibility(n_clicks):
         return {'width': '30%', 'display': 'block'}, {'width': '70%'}
 
 @app.callback(
-    Output('ai-output', 'children'),
+    [Output('ai-output', 'children')],
     [Input('text-box-container', 'style')],
     [
         State('store-dbt-yearly-data', 'data'),
