@@ -439,7 +439,7 @@ def update_output(textbox_style, df_dbt, df_rh, last_clicked_data, stored_ai_con
             content = response.json().get("output_data", {}).get("content", "")
             if content:
             # 将自定义文本与API返回的Markdown内容合并
-                full_content = f"### Page AI Summary:\n\n {content}\n\n---\n\n"
+                full_content = f"{content}\n\n---\n\n"
                 return [dcc.Markdown(full_content)]
             else:
                 return "Content is empty"
