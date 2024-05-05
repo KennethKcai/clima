@@ -67,7 +67,11 @@ def layout_t_rh():
                                 "Page Summary",  # 按钮文字
                                 id="summary-button",
                                 className="ml-2 btn btn-dark btn-sm",
-                                style={'margin-right': '20px'}
+                                    style={
+                                        'margin-right': '20px', 
+                                        'background-color': '#003262', 
+                                        'color': 'white'  # 设置文字颜色为白色
+                                    }
                             )
                         ],
                     ), 
@@ -86,7 +90,8 @@ def layout_t_rh():
                                         "AI",
                                         id="ai-button",
                                         n_clicks=0,
-                                        className="ml-2 btn btn-dark btn-sm"
+                                        className="ml-2 btn btn-dark btn-sm",
+                                        style={'background-color': '#003262', 'color': 'white'}
                                     ),
                                 ]
                             ),
@@ -146,7 +151,7 @@ def layout_t_rh():
                                     'height': '100vh', 
                                     'overflow': 'auto', 
                                     # 'position': 'fixed',
-                                    'background-color': '#ededed',  # 修改背景颜色为灰色
+                                    'background-color': '#ebf0f5',  # 修改背景颜色为灰色
                                     'color': '#4a4a49',  # 修改文本颜色为黑色
                                     'padding': '20px', 
                                     'border-radius': '15px',
@@ -154,7 +159,7 @@ def layout_t_rh():
                             
                                 children=[
                                     html.P(
-                                        "AI output will appear here after button click." * 50,
+                                        "AI output will appear here after button click.",
                                         style={
                                             'fontSize': '10px'  # 减小字体大小
                                         }
@@ -216,166 +221,230 @@ def update_yearly_chart(ts, global_local, dd_value, df, meta, si_ip):
     
 @app.callback(
     [Output('text-box-container', 'style'),
-     Output('main-content', 'style')],
-    [Input('ai-button', 'n_clicks')]
+     Output('main-content', 'style'),
+     Output('last-clicked-button', 'data')],
+    [Input('ai-button', 'n_clicks'),
+     Input('summary-button', 'n_clicks')],
+    [State('last-clicked-button', 'data')]
 )
-def toggle_textbox_visibility(n_clicks):
-    if n_clicks is None:
+def toggle_textbox_visibility(ai_clicks, summary_clicks, last_clicked_data):
+    ctx = dash.callback_context
+
+    if not ctx.triggered:
         raise PreventUpdate
 
-    if n_clicks % 2 == 0:
-        return {'display': 'none'}, {'width': '100%'}
-    else:
-        return {'width': '30%', 'display': 'block'}, {'width': '70%'}
+    button_id = ctx.triggered[0]['prop_id'].split('.')[0]
+    action = ctx.triggered[0]['value']
+
+    if action is None:
+        raise PreventUpdate  # Ensure that there is a real user action
+
+    # Update last-clicked-button data
+    last_clicked_data['button'] = button_id
+
+    # Determine visibility based on the button clicks
+    if button_id == 'ai-button':
+        if ai_clicks % 2 == 0:
+            return {'display': 'none'}, {'width': '100%'}, last_clicked_data
+        else:
+            return {'width': '30%', 'display': 'block'}, {'width': '70%'}, last_clicked_data
+    elif button_id == 'summary-button':
+        if summary_clicks % 2 == 0:
+            return {'display': 'none'}, {'width': '100%'}, last_clicked_data
+        else:
+            return {'width': '30%', 'display': 'block'}, {'width': '70%'}, last_clicked_data
+
+    return dash.no_update
 
 @app.callback(
     [Output('ai-output', 'children')],
     [Input('text-box-container', 'style')],
     [
         State('store-dbt-yearly-data', 'data'),
-        State('store-rh-yearly-data', 'data')
+        State('store-rh-yearly-data', 'data'),
+        State('last-clicked-button', 'data'),
+        State('store-ai-summary-data', 'data')
     ],
 )
-def update_output(textbox_style, df_dbt, df_rh):
-    if df_dbt:
-        # DBT data
-        if textbox_style['display'] == 'none' or df_dbt is None:
-            return PreventUpdate
+def update_output(textbox_style, df_dbt, df_rh, last_clicked_data, stored_ai_content):
+    if last_clicked_data['button'] == 'ai-button':
+        if df_dbt:
+            # DBT data
+            if textbox_style['display'] == 'none' or df_dbt is None:
+                return PreventUpdate
 
-        try:
-            y_values = [item['y'] for item in df_dbt if 'y' in item]
-            base_values = [item['base'] for item in df_dbt if 'base' in item]
-            rounded_data_y = [[round(num, 1) for num in sublist] for sublist in y_values]
-            rounded_data_base = [[round(num, 1) for num in sublist] for sublist in base_values]
+            try:
+                y_values = [item['y'] for item in df_dbt if 'y' in item]
+                base_values = [item['base'] for item in df_dbt if 'base' in item]
+                rounded_data_y = [[round(num, 1) for num in sublist] for sublist in y_values]
+                rounded_data_base = [[round(num, 1) for num in sublist] for sublist in base_values]
 
-            lst_range_80 = [[base + y, base] for base, y in zip(rounded_data_base[0], rounded_data_y[0])]
-            lst_range_90 = [[base + y, base] for base, y in zip(rounded_data_base[1], rounded_data_y[1])]
+                lst_range_80 = [[base + y, base] for base, y in zip(rounded_data_base[0], rounded_data_y[0])]
+                lst_range_90 = [[base + y, base] for base, y in zip(rounded_data_base[1], rounded_data_y[1])]
 
-            data_with_description = {
-                "ASHRAE adaptive comfort (80%)": lst_range_80,
-                "ASHRAE adaptive comfort (90%)": lst_range_90,
-                "Daily temperature average": rounded_data_y[3],
-                "Daily temperature range": rounded_data_y[2]
-            }
-            json_data = json.dumps(data_with_description, indent=4)
+                data_with_description = {
+                    "ASHRAE adaptive comfort (80%)": lst_range_80,
+                    "ASHRAE adaptive comfort (90%)": lst_range_90,
+                    "Daily temperature average": rounded_data_y[3],
+                    "Daily temperature range": rounded_data_y[2]
+                }
+                json_data = json.dumps(data_with_description, indent=4)
 
-            url = "https://api.zerowidth.ai/beta/process/XmZlDB2W1HFIzS7fmawI/fI8ys5r4pBiTnLdlQJdS"
-            headers = {
-                "Authorization": "Bearer sk0w-e1b943077ab9f86493693118eca0dfeb",
-                "Content-Type": "application/json"
-            }
-            
-            response = requests.post(url, json={'data': {'variables': {'DATA': json_data}}}, headers=headers)
-            if response.status_code == 200:
-                content = response.json().get("output_data", {}).get("content", "")
-                if content:
-                # 将自定义文本与API返回的Markdown内容合并
-                    months = re.findall(r'\b(JAN|FEB|MAR|APR|MAY|JUN|JULY|JUL|AUG|SEP|OCT|NOV|DEC)\b', content)
-                    buttons = [html.Div([
-                        html.Button(f"Continue Analyzing {month}", id={'type': 'month-button', 'index': month}, n_clicks=0),
-                        dcc.Loading(
-                            type="circle",  # 加载动画的类型
-                            children=html.Div(id={'type': 'click-output', 'index': month}, style={'padding': '5px'})
-                        )
-                    ], style={'marginBottom': '20px'}) for month in set(months)]
+                url = "https://api.zerowidth.ai/beta/process/XmZlDB2W1HFIzS7fmawI/fI8ys5r4pBiTnLdlQJdS"
+                headers = {
+                    "Authorization": "Bearer sk0w-e1b943077ab9f86493693118eca0dfeb",
+                    "Content-Type": "application/json"
+                }
+                
+                response = requests.post(url, json={'data': {'variables': {'DATA': json_data}}}, headers=headers)
+                if response.status_code == 200:
+                    content = response.json().get("output_data", {}).get("content", "")
+                    if content:
+                    # 将自定义文本与API返回的Markdown内容合并
+                        months = re.findall(r'\b(JAN|FEB|MAR|MARCH|APR|MAY|JUN|JULY|JUL|AUG|SEP|OCT|NOV|DEC)\b', content)
+                        buttons = [html.Div([
+                            html.Button(f"Continue Analyzing {month}", id={'type': 'month-button', 'index': month}, n_clicks=0,                    
+                                        style={
+                                            'background-color': 'transparent',  # 设置背景颜色为透明
+                                            'color': 'black',  # 设置文本颜色为黑色（或其他颜色，根据需要调整）
+                                            # 'border': 'none'  # 去掉边框
+                                        }),
+                            dcc.Loading(
+                                type="circle",  # 加载动画的类型
+                                children=html.Div(id={'type': 'click-output', 'index': month}, style={'padding': '5px'})
+                            )
+                        ], style={'marginBottom': '20px'}) for month in set(months)]
 
-                    # buttons.append(design_strategy_button)
+                        # buttons.append(design_strategy_button)
 
-                    full_content = f"### Tempreature AI analysis:\n\n {content}\n\n---\n\n"
-                    return [dcc.Markdown(full_content)] + buttons
+                        full_content = f"### Temperature AI analysis:\n\n {content}\n\n---\n\n"
+                        return [dcc.Markdown(full_content)] + buttons
+                    else:
+                        return "Content is empty"
                 else:
-                    return "Content is empty"
-            else:
-                return f"API Error: {response.status_code}"
-        except Exception as e:
-            return f"Error processing data: {str(e)}"
+                    return f"API Error: {response.status_code}"
+            except Exception as e:
+                return f"Error processing data: {str(e)}"
 
-    # RH data 
-    elif df_rh:
-        if textbox_style['display'] == 'none' or df_rh is None:
-            return PreventUpdate
+        # RH data 
+        elif df_rh:
+            if textbox_style['display'] == 'none' or df_rh is None:
+                return PreventUpdate
 
-        # print(df_rh)
-        try:
-            y_values = [item['y'] for item in df_rh if 'y' in item]
-            base_values = [item['base'] for item in df_rh if 'base' in item]
-            ave_values = [item['customdata'] for item in df_rh if 'customdata' in item]
+            # print(df_rh)
+            try:
+                y_values = [item['y'] for item in df_rh if 'y' in item]
+                base_values = [item['base'] for item in df_rh if 'base' in item]
+                ave_values = [item['customdata'] for item in df_rh if 'customdata' in item]
 
 
-            rounded_data_y = [[round(num, 1) for num in sublist] for sublist in y_values]
-            rounded_data_base = [[round(num, 1) for num in sublist] for sublist in base_values]
-            rounded_data_ave = [[[round(num[0], 1)] + num[1:] for num in sublist] for sublist in ave_values]
+                rounded_data_y = [[round(num, 1) for num in sublist] for sublist in y_values]
+                rounded_data_base = [[round(num, 1) for num in sublist] for sublist in base_values]
+                rounded_data_ave = [[[round(num[0], 1)] + num[1:] for num in sublist] for sublist in ave_values]
 
 
-            def generate_range_list(y_values, base_values):
-                lst_range_min = []
-                lst_range_max = []
+                def generate_range_list(y_values, base_values):
+                    lst_range_min = []
+                    lst_range_max = []
 
-                for i in range(len(base_values)):
-                    range_min = base_values[i]
-                    lst_range_min.append(range_min)
-                    range_max = base_values[i] + y_values[i]
-                    lst_range_max.append(range_max)
-                
-                lst_range = []
-                for i in range(len(lst_range_min)):
-                    range_item = [lst_range_min[i], lst_range_max[i]]
-                    lst_range.append(range_item)
-                
-                return lst_range
+                    for i in range(len(base_values)):
+                        range_min = base_values[i]
+                        lst_range_min.append(range_min)
+                        range_max = base_values[i] + y_values[i]
+                        lst_range_max.append(range_max)
+                    
+                    lst_range = []
+                    for i in range(len(lst_range_min)):
+                        range_item = [lst_range_min[i], lst_range_max[i]]
+                        lst_range.append(range_item)
+                    
+                    return lst_range
 
-            rh_range = generate_range_list(rounded_data_y[1], rounded_data_base[1])
-            rh_band = generate_range_list(rounded_data_y[0], rounded_data_base[0])
+                rh_range = generate_range_list(rounded_data_y[1], rounded_data_base[1])
+                rh_band = generate_range_list(rounded_data_y[0], rounded_data_base[0])
 
-            rh_ave = rounded_data_ave[0]
+                rh_ave = rounded_data_ave[0]
 
-            data_with_description = {
-                "humidity comfort band(%) from the first date to the last date of the year": rh_band,
-                "Relative humidity Range(%) from the first date to the last date of the year": rh_range,
-                "Average Relative humidity from the first date to the last date of the year": rh_ave
-            }
+                data_with_description = {
+                    "humidity comfort band(%) from the first date to the last date of the year": rh_band,
+                    "Relative humidity Range(%) from the first date to the last date of the year": rh_range,
+                    "Average Relative humidity from the first date to the last date of the year": rh_ave
+                }
 
-            json_data = json.dumps(data_with_description, indent=4)
+                json_data = json.dumps(data_with_description, indent=4)
 
-            url = "https://api.zerowidth.ai/beta/process/XmZlDB2W1HFIzS7fmawI/cVpYPLjRmxtZoHbHp24H"
-            headers = {
-                "Authorization": "Bearer sk0w-e1b943077ab9f86493693118eca0dfeb", 
-                "Content-Type": "application/json"
-            }
+                url = "https://api.zerowidth.ai/beta/process/XmZlDB2W1HFIzS7fmawI/cVpYPLjRmxtZoHbHp24H"
+                headers = {
+                    "Authorization": "Bearer sk0w-e1b943077ab9f86493693118eca0dfeb", 
+                    "Content-Type": "application/json"
+                }
 
-            data = {
-                "data": {
-                    "variables": {
-                        "DATA": json_data,
+                data = {
+                    "data": {
+                        "variables": {
+                            "DATA": json_data,
+                        }
+                    }
+                }
+
+                response = requests.post(url, json=data, headers=headers)
+
+                if response.status_code == 200:
+                    content = response.json().get("output_data", {}).get("content", "")
+                    if content:
+                    # 将自定义文本与API返回的Markdown内容合并
+                        months = re.findall(r'\b(JAN|FEB|MAR|APR|MAY|JUN|JULY|JUL|AUG|SEP|OCT|NOV|DEC)\b', content)
+                        buttons = [html.Div([
+                            html.Button(f"Continue Analyzing {month}", id={'type': 'month-button', 'index': month}, n_clicks=0,
+                                        style={
+                                            'background-color': 'transparent',  # 设置背景颜色为透明
+                                            'color': 'black',  # 设置文本颜色为黑色（或其他颜色，根据需要调整）
+                                            # 'border': 'none'  # 去掉边框
+                                        }),
+                            dcc.Loading(
+                                type="circle",  # 加载动画的类型
+                                children=html.Div(id={'type': 'click-output', 'index': month}, style={'padding': '5px'})
+                            )
+                        ], style={'marginBottom': '20px'}) for month in set(months)]
+
+                        # buttons.append(design_strategy_button)
+
+                        full_content = f"### Humidity AI analysis:\n\n {content}\n\n---\n\n"
+                        return [dcc.Markdown(full_content)] + buttons
+                    else:
+                        return "Content is empty"
+                else:
+                    return f"API Error: {response.status_code}"
+            except Exception as e:
+                return f"Error processing data: {str(e)}"
+    
+    elif last_clicked_data['button'] == 'summary-button':
+        json_data = json.dumps(stored_ai_content, indent=4)
+        url = "https://api.zerowidth.ai/beta/process/XmZlDB2W1HFIzS7fmawI/b3LXy0CVeImY7hVbQXk9"
+        headers = {
+            "Authorization": "Bearer sk0w-e1b943077ab9f86493693118eca0dfeb", 
+            "Content-Type": "application/json"
+        }
+
+        data = {
+            "data": {
+                "variables": {
+                    "TEXT": json_data,
                     }
                 }
             }
 
-            response = requests.post(url, json=data, headers=headers)
-
-            if response.status_code == 200:
-                content = response.json().get("output_data", {}).get("content", "")
-                if content:
-                # 将自定义文本与API返回的Markdown内容合并
-                    months = re.findall(r'\b(JAN|FEB|MAR|APR|MAY|JUN|JULY|JUL|AUG|SEP|OCT|NOV|DEC)\b', content)
-                    buttons = [html.Div([
-                        html.Button(f"Continue Analyzing {month}", id={'type': 'month-button', 'index': month}, n_clicks=0),
-                        dcc.Loading(
-                            type="circle",  # 加载动画的类型
-                            children=html.Div(id={'type': 'click-output', 'index': month}, style={'padding': '5px'})
-                        )
-                    ], style={'marginBottom': '20px'}) for month in set(months)]
-
-                    # buttons.append(design_strategy_button)
-
-                    full_content = f"### Humidity AI analysis:\n\n {content}\n\n---\n\n"
-                    return [dcc.Markdown(full_content)] + buttons
-                else:
-                    return "Content is empty"
+        response = requests.post(url, json=data, headers=headers)
+        if response.status_code == 200:
+            content = response.json().get("output_data", {}).get("content", "")
+            if content:
+            # 将自定义文本与API返回的Markdown内容合并
+                full_content = f"### Page AI Summary:\n\n {content}\n\n---\n\n"
+                return [dcc.Markdown(full_content)]
             else:
-                return f"API Error: {response.status_code}"
-        except Exception as e:
-            return f"Error processing data: {str(e)}"
+                return "Content is empty"
+        else:
+            return f"API Error: {response.status_code}"
 
 # Update the special month click output
 @app.callback(
@@ -427,6 +496,70 @@ def on_button_click(n_clicks, button_id, df):
     except Exception as e:
         return f"Error processing data: {str(e)}"
 
+@app.callback(
+    Output("store-ai-summary-data", "data"),
+    [Input('ai-output', 'children')],
+    [State("store-ai-summary-data", "data")]
+)
+def update_storage(children, stored_content):
+    print("Callback triggered")
+    # print("Original children:", children)
+    
+    # If there's no new content, do not update anything
+    if not children:
+        raise PreventUpdate
+
+    # Initialize stored_content as a list if it's None
+    if stored_content is None:
+        stored_content = []
+
+    # Ensure that stored_content is a list, not accidentally a string
+    if isinstance(stored_content, str):
+        stored_content = [stored_content]
+
+    # Use the helper function to extract texts from the children structure
+    new_texts = extract_text_from_complex_structure(children)
+
+    # Now, concatenate the old stored content with the new texts
+    updated_content = stored_content + new_texts
+    print("Updated content:", updated_content)
+
+    return updated_content
+
+# @app.callback(
+#     Output('ai-output', 'children'),  # 将输出定向到 ai-output 组件的 children 属性
+#     [Input('summary-button', 'n_clicks')],
+#     [State('store-ai-summary-data', 'data')]
+# )
+# def handle_api_call(n_clicks, page_content):
+#     if n_clicks is None:
+#         raise PreventUpdate
+
+#     # 序列化存储的数据以用于API调用
+#     json_data = json.dumps(page_content, indent=4)
+
+#     # API URL 和 headers
+#     url = "https://api.zerowidth.ai/beta/process/XmZlDB2W1HFIzS7fmawI/b3LXy0CVeImY7hVbQXk9"
+#     headers = {
+#         "Authorization": "Bearer sk0w-e1b943077ab9f86493693118eca0dfeb",
+#         "Content-Type": "application/json"
+#     }
+
+#     # 发起 POST 请求
+#     response = requests.post(url, json={'data': {'variables': {'DATA': json_data}}}, headers=headers)
+#     if response.status_code == 200:
+#         # 正确处理 API 响应并返回
+#         return f"API call was successful: {response.json()}"  # 使用 response.json() 获取 JSON 响应内容
+#     else:
+#         return f"API call failed with status code: {response.status_code}"
+
+# @app.callback(
+#     Output('dummy-output', 'children'),
+#     [Input('store-ai-summary-data', 'data')]
+# )
+# def monitor_store_data(data):
+#     print("Current store data:", json.dumps(data, indent=4))
+#     return "Check the console for the stored data!"
 
 @app.callback(
     Output("daily", "children"),
@@ -533,3 +666,19 @@ def default_serializer(obj):
     raise TypeError(f"Object of type {obj.__class__.__name__} is not JSON serializable")
 
 
+def extract_text_from_complex_structure(children):
+    # 初始文本为空字符串
+    texts = []
+    if isinstance(children, list):
+        for child in children:
+            if isinstance(child, dict) and 'props' in child and 'children' in child['props']:
+                text = child['props']['children']
+                # 如果文本是直接的字符串，收集它
+                if isinstance(text, str):
+                    texts.append(text)
+                # 如果文本是更深层次的结构，递归提取
+                elif isinstance(text, list) or isinstance(text, dict):
+                    texts.extend(extract_text_from_complex_structure(text))
+    elif isinstance(children, str):
+        texts.append(children)
+    return texts
